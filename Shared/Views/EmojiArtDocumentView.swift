@@ -131,6 +131,32 @@ struct EmojiArtDocumentView: View {
             }
     }
     
+    // aca está la data Juan: basicamente la app es una fondo pelado donde podes hacer
+    // drag and drop primero de un background desde internet o desde una imagen cualquiera,
+    // y luego tenes una paleta de emojis que tambien podes dropear para hacer tu propia obra de arte.
+    // aparte del drag and drop estan listos y andando 3 gestos: doble tap para ajustar la imagen al tamaño de la pantalla,
+    // un pinch para hacer zoom al fondo, y arrastrar para moverlo.
+    // el assignment pide hacer que los emojis sean seleccionables con un tap, y una vez que esten seleccionados poder
+    // moverlos, agrandarlos con un pinch o borrarlos. tambien tienen que cancelar la seleccion cuando los volves a tapear una vez.
+    // no avance mucho, pero estas lineas de aca abajo son las mias. cree el Set selectedEmojis para que definan cuando un emoji esta
+    // seleccionado o no, y usa una funcion creada como extension llamada toggleMembership
+    // que se encarga de remover o insertar un Identifiable de un Set (la podes encontrar definida en UtilityExtensions).
+    // me trabé porque no se que parametro pasarle a toggleMembership, se que document.emojis es un Array y por eso no va, pero probe de todo
+    // y no se si ahi va algo ya existente, o si me falta alguna variable que se defina al momento de clickear el emoji.
+    // obviamente el error tambien puede ser otro que no estoy sabiendo ver.
+    
+    
+    var selectedEmojis = Set<EmojiArtModel.Emoji>()
+    
+    private mutating func oneTapToSelect(in: EmojiArtModel.Emoji) -> some Gesture {
+        TapGesture(count: 1)
+            .onEnded {
+                selectedEmojis.toggleMembership(of: document.emojis)
+        }
+    }
+    
+    // aca termina lo que escribi, estoy seguro de que es una pavada pero no le encontré la vuelta. sigo mañana temprano
+    
     private func doubleTapToZoom(in size: CGSize) -> some Gesture {
         TapGesture(count: 2)
             .onEnded {
@@ -139,7 +165,6 @@ struct EmojiArtDocumentView: View {
                 }
             }
     }
-    
     
     private func zoomToFit(_ image: UIImage?, in size: CGSize) {
         if let image = image, image.size.width > 0, image.size.height > 0, size.width > 0, size.height > 0 {
