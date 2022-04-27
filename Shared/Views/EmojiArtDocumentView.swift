@@ -33,9 +33,11 @@ struct EmojiArtDocumentView: View {
                 } else {
                     ForEach(document.emojis) { emoji in
                         Text(emoji.text)
+                            .background(selectedEmojis.contains(emoji) ? Color.blue : Color.clear)
                             .font(.system(size: fontSize(for: emoji)))
                             .scaleEffect(zoomScale)
                             .position(position(for: emoji, in: geometry))
+                            .gesture(oneTapToSelect(emoji: emoji))
                     }
                 }
             }
@@ -48,7 +50,7 @@ struct EmojiArtDocumentView: View {
     }
     
     private func drop(providers: [NSItemProvider], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
-        var found =  providers.loadObjects(ofType: URL.self) { url in
+        var found = providers.loadObjects(ofType: URL.self) { url in
             document.setBackground(EmojiArtModel.Background.url(url.imageURL))
         }
         if !found {
@@ -131,31 +133,15 @@ struct EmojiArtDocumentView: View {
             }
     }
     
-    // aca está la data Juan: basicamente la app es una fondo pelado donde podes hacer
-    // drag and drop primero de un background desde internet o desde una imagen cualquiera,
-    // y luego tenes una paleta de emojis que tambien podes dropear sobre el fondo elegido para hacer tu propia obra de arte.
-    // aparte del drag and drop estan listos y andando 3 gestos: doble tap para ajustar la imagen al tamaño de la pantalla,
-    // un pinch para hacer zoom al fondo, y arrastrar para moverlo.
-    // el assignment pide hacer que los emojis sean seleccionables con un tap, y una vez que esten seleccionados poder
-    // moverlos, agrandarlos con un pinch o borrarlos. tambien tienen que cancelar la seleccion cuando los volves a tapear una vez.
-    // no avance mucho, pero estas lineas de aca abajo son las mias. cree el Set selectedEmojis para que definan cuando un emoji esta
-    // seleccionado o no, y usa una funcion creada como extension llamada toggleMembership
-    // que se encarga de remover o insertar un Identifiable de un Set (la podes encontrar definida en UtilityExtensions).
-    // me trabé porque no se que parametro pasarle a toggleMembership, se que document.emojis es un Array y por eso no va,
-    // tengo que acceder al -emoji ya posicionado en el documento-, pero no se cual seria el termino para acceder. probe de todo
-    // y no se si ahi va algo ya existente, o si me falta crar alguna variable que se defina al momento de clickear el emoji para luego poder pasarla.
-    // obviamente el error tambien puede ser otro que no estoy sabiendo ver.
-    
-    var selectedEmojis = Set<EmojiArtModel.Emoji>()
-    
-    private mutating func oneTapToSelect(in: EmojiArtModel.Emoji) -> some Gesture {
+    @State var selectedEmojis = Set<EmojiArtModel.Emoji>()
+
+    private func oneTapToSelect(emoji: EmojiArtModel.Emoji) -> some Gesture {
         TapGesture(count: 1)
             .onEnded {
-                selectedEmojis.toggleMembership(of: document.emojis)
-        }
+                selectedEmojis.toggleMembership(of: emoji)
+                print(selectedEmojis)
+            }
     }
-    
-    // aca termina lo que escribi, estoy seguro de que es una pavada pero no le encontré la vuelta. sigo mañana temprano
     
     private func doubleTapToZoom(in size: CGSize) -> some Gesture {
         TapGesture(count: 2)
