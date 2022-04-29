@@ -27,13 +27,13 @@ struct EmojiArtDocumentView: View {
                         .scaleEffect(zoomScale)
                         .position(convertFromEmojiCoordinates((0,0), in: geometry))
                 )
-                .gesture(doubleTapToZoom(in: geometry.size))
+                .gesture(doubleTapToZoom(in: geometry.size).exclusively(before: oneTapOnBackgroundToDeselect()))
                 if document.backgroundImageFetchStatus == .fetching {
                     ProgressView().scaleEffect(2)
                 } else {
                     ForEach(document.emojis) { emoji in
                         Text(emoji.text)
-                            .background(selectedEmojis.contains(emoji) ? Color.blue : Color.clear)
+                            .border(selectedEmojis.contains(emoji) ? Color.blue : Color.clear)
                             .font(.system(size: fontSize(for: emoji)))
                             .scaleEffect(zoomScale)
                             .position(position(for: emoji, in: geometry))
@@ -116,11 +116,36 @@ struct EmojiArtDocumentView: View {
             }
     }
     
+    @State var selectedEmojis = Set<EmojiArtModel.Emoji>()
+
+    private func oneTapToSelect(emoji: EmojiArtModel.Emoji) -> some Gesture {
+        TapGesture(count: 1)
+            .onEnded {
+                selectedEmojis.toggleMembership(of: emoji)
+            }
+    }
+    
+    private func oneTapOnBackgroundToDeselect() -> some Gesture {
+        TapGesture(count: 1)
+            .onEnded {
+                selectedEmojis.removeAll()
+            }
+    }
+    
     @State private var steadyStateZoomScale: CGFloat = 1
     @GestureState private var gestureZoomScale: CGFloat = 1
     
     private var zoomScale: CGFloat {
         steadyStateZoomScale * gestureZoomScale
+    }
+    
+    private func doubleTapToZoom(in size: CGSize) -> some Gesture {
+        TapGesture(count: 2)
+            .onEnded {
+                withAnimation {
+                    zoomToFit(document.backgroundImage, in: size)
+                }
+            }
     }
     
     private func pinchToZoom() -> some Gesture {
@@ -130,25 +155,6 @@ struct EmojiArtDocumentView: View {
             }
             .onEnded { gestureScaleAtEnd in
                 steadyStateZoomScale *= gestureScaleAtEnd
-            }
-    }
-    
-    @State var selectedEmojis = Set<EmojiArtModel.Emoji>()
-
-    private func oneTapToSelect(emoji: EmojiArtModel.Emoji) -> some Gesture {
-        TapGesture(count: 1)
-            .onEnded {
-                selectedEmojis.toggleMembership(of: emoji)
-                print(selectedEmojis)
-            }
-    }
-    
-    private func doubleTapToZoom(in size: CGSize) -> some Gesture {
-        TapGesture(count: 2)
-            .onEnded {
-                withAnimation {
-                    zoomToFit(document.backgroundImage, in: size)
-                }
             }
     }
     
@@ -183,7 +189,6 @@ struct ScrollingEmojisView: View {
         }
     }
 }
-
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
