@@ -10,7 +10,6 @@ import SwiftUI
 struct EmojiArtDocumentView: View {
     
     @ObservedObject var document: EmojiArtDocument
-    let defaultEmojiFontSize: CGFloat = 50
     
     var body: some View {
         VStack(spacing: 0) {
@@ -35,7 +34,7 @@ struct EmojiArtDocumentView: View {
                         Text(emoji.text)
                             .border(selectedEmojis.contains(emoji) ? Color.blue : Color.clear)
                             .font(.system(size: fontSize(for: emoji)))
-                            .scaleEffect(zoomScale)
+                            .scaleEffect(emojiZoomScale)
                             .position(position(for: emoji, in: geometry))
                             .gesture(oneTapToSelect(emoji: emoji))
                     }
@@ -135,26 +134,44 @@ struct EmojiArtDocumentView: View {
     @State private var steadyStateZoomScale: CGFloat = 1
     @GestureState private var gestureZoomScale: CGFloat = 1
     
+    var defaultEmojiFontSize: CGFloat = 50
+    @State private var steadyStateEmojiZoomScale: CGFloat = 1
+    @GestureState private var zoomGestureEmojiScale: CGFloat = 1
+    
     private var zoomScale: CGFloat {
         steadyStateZoomScale * gestureZoomScale
     }
     
+    private var emojiZoomScale: CGFloat {
+        steadyStateEmojiZoomScale * zoomGestureEmojiScale
+    }
+    
+    private func pinchToZoom() -> some Gesture {
+        if selectedEmojis.isEmpty {
+           return MagnificationGesture()
+                .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, transaction in
+                    gestureZoomScale = latestGestureScale
+                }
+                .onEnded { gestureScaleAtEnd in
+                    steadyStateZoomScale *= gestureScaleAtEnd
+                }
+        } else {
+            return MagnificationGesture()
+                .updating($zoomGestureEmojiScale) { latestGestureScale, zoomGestureEmojiScale, transaction in
+                    zoomGestureEmojiScale = latestGestureScale
+                }
+                .onEnded { gestureScaleAtEnd in
+                    steadyStateEmojiZoomScale = gestureScaleAtEnd
+                }
+        }
+    }
+
     private func doubleTapToZoom(in size: CGSize) -> some Gesture {
         TapGesture(count: 2)
             .onEnded {
                 withAnimation {
                     zoomToFit(document.backgroundImage, in: size)
                 }
-            }
-    }
-    
-    private func pinchToZoom() -> some Gesture {
-        MagnificationGesture()
-            .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, transaction in
-                gestureZoomScale = latestGestureScale
-            }
-            .onEnded { gestureScaleAtEnd in
-                steadyStateZoomScale *= gestureScaleAtEnd
             }
     }
     
