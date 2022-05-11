@@ -33,11 +33,11 @@ struct EmojiArtDocumentView: View {
                     ForEach(document.emojis) { emoji in
                         Text(emoji.text)
                             .border(selectedEmojis.contains(emoji) ? Color.blue : Color.clear)
-                            .scaleEffect(selectedEmojis.contains(emoji) ? emojiZoomScale : emojiSteadyStateZoomScale)
                             .scaleEffect(zoomScale)
-                            .font(.system(size: fontSize(for: emoji)))
+                            .font(.system(size: (selectedEmojis.contains(emoji) ? fontSize(for: emoji) * emojiZoomScale : fontSize(for: emoji))))
                             .position(position(for: emoji, in: geometry))
                             .gesture(oneTapToSelect(emoji: emoji))
+                            .gesture(dragEmojiGesture(emoji: emoji))
                     }
                 }
             }
@@ -95,22 +95,11 @@ struct EmojiArtDocumentView: View {
         )
     }
     
-    private func fontSize(for emoji: EmojiArtModel.Emoji) -> CGFloat {
-        CGFloat(emoji.size)
-    }
-    
     @State private var steadyStatePanOffset: CGSize = CGSize.zero
     @GestureState private var gesturePanOffset: CGSize = CGSize.zero
     
-    @State private var draggedEmojiPosition: CGSize = CGSize.zero
-    @GestureState private var emojiDragGestureValue: CGSize = CGSize.zero
-    
     private var panOffset: CGSize {
         (steadyStatePanOffset + gesturePanOffset) * zoomScale
-    }
-    
-    private var emojiPanOffset: CGSize {
-        (draggedEmojiPosition + emojiDragGestureValue) * zoomScale
     }
     
     private func panGesture() -> some Gesture {
@@ -123,13 +112,19 @@ struct EmojiArtDocumentView: View {
             }
     }
     
-    private func emojiDragGesture(emoji: EmojiArtModel.Emoji ) -> some Gesture {
+    @State private var emojiPosition: CGSize = .zero
+    
+    private func dragEmojiGesture(emoji: EmojiArtModel.Emoji) -> some Gesture {
         DragGesture()
-            .updating($emojiDragGestureValue) { latestDragGestureValue, emojiGesturePanOffset, transaction in
-                emojiGesturePanOffset = latestDragGestureValue.translation / zoomScale
+            .onChanged { value in
+                withAnimation(.spring()) {
+                    emojiPosition = value.translation
+                }
             }
-            .onEnded { finalDragGestureValue in
-                draggedEmojiPosition = draggedEmojiPosition + (finalDragGestureValue.translation / zoomScale)
+            .onEnded { value in
+                withAnimation(.spring()) {
+                    emojiPosition = value.translation
+                }
             }
     }
     
@@ -147,6 +142,10 @@ struct EmojiArtDocumentView: View {
             .onEnded {
                 selectedEmojis.removeAll()
             }
+    }
+    
+    private func fontSize(for emoji: EmojiArtModel.Emoji) -> CGFloat {
+        CGFloat(emoji.size)
     }
     
     @State private var steadyStateZoomScale: CGFloat = 1
