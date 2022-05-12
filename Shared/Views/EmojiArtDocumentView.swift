@@ -36,8 +36,7 @@ struct EmojiArtDocumentView: View {
                             .scaleEffect(zoomScale)
                             .font(.system(size: (selectedEmojis.contains(emoji) ? fontSize(for: emoji) * emojiZoomScale : fontSize(for: emoji))))
                             .position(position(for: emoji, in: geometry))
-                            .gesture(oneTapToSelect(emoji: emoji))
-                            .gesture(dragEmojiGesture(emoji: emoji))
+                            .gesture(dragEmojiGesture(emoji: emoji).exclusively(before: oneTapToSelect(emoji: emoji)))
                     }
                 }
             }
@@ -75,7 +74,11 @@ struct EmojiArtDocumentView: View {
     }
     
     private func position(for emoji: EmojiArtModel.Emoji, in geometry: GeometryProxy) -> CGPoint {
-        convertFromEmojiCoordinates((emoji.x, emoji.y), in: geometry)
+        if selectedEmojis.contains(emoji) {
+            return convertFromEmojiCoordinates((emoji.x + Int(dragEmojiPanOffset.width), emoji.y + Int(dragEmojiPanOffset.height)), in: geometry)
+        } else {
+            return convertFromEmojiCoordinates((emoji.x, emoji.y), in: geometry)
+        }
     }
     
     private func convertToEmojiCoordinates(_ location: CGPoint, in geometry: GeometryProxy) -> (x: Int, y: Int) {
@@ -112,18 +115,16 @@ struct EmojiArtDocumentView: View {
             }
     }
     
-    @State private var emojiPosition: CGSize = .zero
+    @GestureState private var dragEmojiPanOffset: CGSize = .zero
     
     private func dragEmojiGesture(emoji: EmojiArtModel.Emoji) -> some Gesture {
         DragGesture()
-            .onChanged { value in
-                withAnimation(.spring()) {
-                    emojiPosition = value.translation
-                }
+            .updating($dragEmojiPanOffset) { latestDragGestureValue, emojiPanGesture , transaction in
+                emojiPanGesture = latestDragGestureValue.distance / zoomScale
             }
-            .onEnded { value in
-                withAnimation(.spring()) {
-                    emojiPosition = value.translation
+            .onEnded { finalDragGestureValue in
+                for emoji in selectedEmojis {
+                    document.moveEmoji(emoji, by: finalDragGestureValue.distance / zoomScale)
                 }
             }
     }
