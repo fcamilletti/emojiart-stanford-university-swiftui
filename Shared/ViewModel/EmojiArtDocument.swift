@@ -79,4 +79,10 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    func removeEmoji(_ emoji: EmojiArtModel.Emoji) {
+        if let index = emojiArt.emojis.index(matching: emoji) {
+            emojiArt.emojis.remove(at: index)
+        }
+    }
+    
 }
