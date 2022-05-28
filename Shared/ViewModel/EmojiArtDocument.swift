@@ -17,6 +17,18 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    private func save(to url: URL) {
+        let errorFunction = "\(String(describing: self)).\(#function)"
+        do {
+            let data: Data = try emojiArt.json()
+            try data.write(to: url)
+        } catch let encodingError where encodingError is EncodingError {
+            
+        } catch {
+            print("\(errorFunction) error = \(error)")
+        }
+    }
+    
     init() {
         emojiArt = EmojiArtModel()
     }
